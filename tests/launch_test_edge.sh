@@ -11,7 +11,7 @@ sleep 2
 
 "$EDGE" --remote-debugging-port=9222 --remote-allow-origins=* \
   --user-data-dir="$PROFILE" --load-extension='E:/程序/edge-video-speed' \
-  --no-first-run --no-default-browser-check \
+  --mute-audio --no-first-run --no-default-browser-check \
   --disable-background-timer-throttling --disable-backgrounding-occluded-windows \
   --disable-renderer-backgrounding --disable-features=CalculateNativeWinOcclusion \
   --window-size=1280,860 --window-position=180,60 about:blank >/dev/null 2>&1 &
