@@ -1,0 +1,6 @@
+{
+  "app_name": { "message": "Video Speed Control" },
+  "extension_name": { "message": "Video Speed Control (On-page Button)" },
+  "extension_description": { "message": "A speed button drawn inside the page: click it to change video playback speed (0.1x-10x, custom presets), remembers speed per site, and works in Edge app windows too." },
+  "action_title": { "message": "Video Speed Control" }
+}

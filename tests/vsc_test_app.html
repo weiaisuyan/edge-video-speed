@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>VSC 应用窗口测试页</title>
+<style>
+  body{font-family:"Segoe UI",sans-serif;margin:24px;background:#fff;color:#222}
+  video{width:420px;background:#000;display:block}
+  .tag{margin-top:12px;color:#6b7280;font-size:12px}
+</style>
+</head>
+<body>
+<h1>应用窗口测试页（无浏览器工具栏）</h1>
+<video id="v1" src="sample.mp4" controls muted loop preload="auto"></video>
+<div class="tag">如果你看到这段文字、并且页面里有一个速度按钮，说明扩展在「安装为应用」的窗口里正常工作。</div>
+<script>
+  window.videoRates = function () {
+    return Array.prototype.map.call(document.querySelectorAll('video'), function (v) { return v.playbackRate; });
+  };
+</script>
+</body>
+</html>

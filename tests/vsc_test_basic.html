@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>VSC test 1（含视频）</title>
+<style>
+  body{font-family:"Segoe UI",sans-serif;margin:24px;background:#fff;color:#222}
+  video{width:420px;background:#000;display:block;margin-bottom:12px}
+  #log{font:12px/1.6 Consolas,monospace;white-space:pre-wrap;background:#f4f5f7;padding:10px;border-radius:8px;max-width:560px}
+  #fsbox{width:420px;height:120px;background:#dfe4ea;border-radius:8px;margin:12px 0;display:flex;align-items:center;justify-content:center}
+</style>
+</head>
+<body>
+<h1>VSC 测试页 1（含视频）</h1>
+<video id="v1" src="sample.mp4" controls muted loop preload="auto"></video>
+<div id="fsbox">全屏容器（点下面按钮进原生全屏）</div>
+<button id="fsbtn" type="button">进入全屏</button>
+<div id="log"></div>
+<script>
+  window.testLog = function (k, v) {
+    document.getElementById('log').textContent += k + '=' + JSON.stringify(v) + '\n';
+  };
+  // 模拟「网站把速度改回 1×」
+  window.siteReset = function () { document.getElementById('v1').playbackRate = 1; return true; };
+  // 模拟「动态插入新播放器」
+  window.addVideo = function () {
+    var v = document.createElement('video');
+    v.id = 'v2'; v.src = 'sample.mp4'; v.muted = true; v.loop = true;
+    document.body.appendChild(v);
+    return true;
+  };
+  window.videoRates = function () {
+    return Array.prototype.map.call(document.querySelectorAll('video'), function (v) { return v.playbackRate; });
+  };
+  document.getElementById('fsbtn').addEventListener('click', function () {
+    document.getElementById('fsbox').requestFullscreen();
+  });
+  window.enterFs = function () { return document.getElementById('fsbox').requestFullscreen(); };
+  window.exitFs = function () { return document.exitFullscreen(); };
+</script>
+</body>
+</html>

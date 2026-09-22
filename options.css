@@ -1,0 +1,139 @@
+:root{
+  --bg:#f4f5f7; --card:#ffffff; --line:#e6e8ec; --text:#22262c; --muted:#6b7280;
+  --accent:#5f7285; --accent-soft:rgba(95,114,133,.10); --danger:#b46a63;
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#1b1d21; --card:#24272c; --line:#33373d; --text:#e8eaee; --muted:#9aa1ab;
+    --accent:#8fa4b8; --accent-soft:rgba(143,164,184,.14); }
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif; font-size:13.5px; line-height:1.6;
+}
+.page{max-width:760px; margin:0 auto; padding:26px 20px 60px}
+.hd{display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:18px}
+.hd h1{font-size:19px; margin:0 0 2px; font-weight:650; letter-spacing:.2px}
+.hd .sub{margin:0; color:var(--muted); font-size:12.5px}
+.hd-ver span{font-size:11.5px; color:var(--muted); background:var(--accent-soft); padding:3px 9px; border-radius:999px}
+.card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:16px 18px; margin-bottom:14px}
+.card h2{font-size:14px; margin:0 0 10px; font-weight:650; letter-spacing:.2px}
+.card h2 + .desc{margin-top:-4px}
+.desc{color:var(--muted); font-size:12.5px; margin:0 0 10px}
+.row{display:flex; align-items:center; gap:14px; padding:9px 0; border-top:1px dashed var(--line)}
+.row:first-of-type{border-top:0}
+.row.col{flex-direction:column; align-items:stretch; gap:8px}
+.row-main{flex:1 1 auto; min-width:0}
+.label{font-size:13px; font-weight:550}
+.row .desc{margin:1px 0 0; font-size:12px}
+.range{flex:0 0 190px; -webkit-appearance:none; appearance:none; height:4px; border-radius:3px; background:var(--line); outline:none}
+.range::-webkit-slider-thumb{-webkit-appearance:none; width:15px; height:15px; border-radius:50%; background:var(--accent); border:2px solid var(--card); cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.25)}
+.switch{flex:0 0 auto; position:relative; display:inline-flex; align-items:center; height:24px; vertical-align:middle; cursor:pointer}
+.switch input{position:absolute; opacity:0; pointer-events:none}
+.switch .track{position:relative; display:block; width:44px; height:24px; border-radius:999px; background:var(--line); transition:background .18s ease}
+/* 圆圈用绝对定位 + translateY(-50%) 真居中：写成 margin 会与无 padding 的 .track 发生 margin 塌陷，圆圈被顶到上沿 */
+.switch .thumb{position:absolute; top:50%; left:3px; width:18px; height:18px; border-radius:50%; background:#fff;
+  box-shadow:0 1px 3px rgba(0,0,0,.28); transition:transform .18s ease; transform:translateY(-50%)}
+.switch input:checked + .track{background:var(--accent)}
+.switch input:checked + .track .thumb{transform:translate(20px,-50%)}
+.seg{display:flex; gap:6px; background:var(--accent-soft); padding:3px; border-radius:10px; align-self:flex-start}
+.seg button{border:0; background:transparent; color:var(--muted); font-size:12.5px; padding:6px 12px; border-radius:8px; cursor:pointer; font-family:inherit}
+.seg button.on{background:var(--card); color:var(--text); font-weight:600; box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.chips{display:flex; flex-wrap:wrap; gap:7px; margin-bottom:10px}
+.chip{display:inline-flex; align-items:center; gap:6px; background:var(--accent-soft); color:var(--text); border:1px solid transparent;
+  border-radius:9px; padding:5px 8px 5px 11px; font-size:12.5px; font-weight:600; font-variant-numeric:tabular-nums}
+.chip button{border:0; background:transparent; color:var(--muted); cursor:pointer; font-size:14px; line-height:1; padding:0 2px}
+.chip button:hover{color:var(--danger)}
+.chip.def{border-color:var(--accent)}
+.addrow{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:4px}
+input[type=text],input[type=number],select{
+  font-family:inherit; font-size:13px; padding:8px 10px; border-radius:9px; border:1px solid var(--line);
+  background:var(--card); color:var(--text); min-width:0; flex:0 0 auto;
+}
+input[type=text]{flex:1 1 200px}
+input[type=number]{width:110px}
+.btn{font-family:inherit; font-size:12.5px; padding:8px 14px; border-radius:9px; border:1px solid var(--accent);
+  background:var(--accent); color:#fff; cursor:pointer; font-weight:550}
+.btn:hover{filter:brightness(1.06)}
+.btn.ghost{background:transparent; color:var(--text); border-color:var(--line)}
+.btn.ghost:hover{border-color:var(--accent); color:var(--accent)}
+.btn.small{padding:5px 10px; font-size:12px}
+.styles{display:flex; flex-direction:column; gap:9px}
+.stgroup{display:flex; align-items:center; gap:10px}
+.stgname{flex:0 0 34px; font-size:11.5px; color:var(--muted)}
+.strow{display:flex; gap:8px; flex-wrap:wrap}
+.stcell{display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer}
+.stpill{width:62px; height:32px; border-radius:999px; display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:650; letter-spacing:.2px; box-shadow:0 1px 4px rgba(0,0,0,.18);
+  transition:transform .12s ease}
+.stcell:hover .stpill{transform:scale(1.05)}
+.stcell.on .stpill{outline:2px solid var(--accent); outline-offset:2px}
+.stname{font-size:10.5px; color:var(--muted)}
+.stcell.on .stname{color:var(--text); font-weight:600}
+/* 页面上菜单的真实样子（设置页里的档位编辑区） */
+.mockpanel{--mp-accent:#5f7285; background:rgba(26,28,32,.97); border:1px solid rgba(255,255,255,.09);
+  border-radius:14px; padding:12px; color:#eef0f3; max-width:302px; margin:4px 0 12px}
+.mp-head{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:9px}
+.mp-head span:first-child{font-size:12px; color:#a7adb7; letter-spacing:.4px}
+.mp-now{font-size:17px; font-weight:700; color:#cfe0f0; font-variant-numeric:tabular-nums}
+.mp-chips{display:grid; grid-template-columns:repeat(3,1fr); gap:6px}
+.mp-chip{position:relative; height:30px; border-radius:9px; border:1px solid rgba(255,255,255,.1);
+  background:rgba(255,255,255,.045); color:#e7eaee; font-size:12.5px; font-weight:600; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; font-variant-numeric:tabular-nums}
+.mp-chip:hover{background:rgba(255,255,255,.1)}
+.mp-chip.on{background:var(--mp-accent); border-color:var(--mp-accent); color:#fff}
+.mp-chip .del{position:absolute; right:3px; top:50%; transform:translateY(-50%); width:15px; height:15px;
+  border-radius:50%; border:0; background:rgba(0,0,0,.34); color:#fff; font-size:10px; line-height:1;
+  cursor:pointer; display:none; padding:0}
+.mp-chip:hover .del{display:block}
+.mp-chip .del:hover{background:#b46a63}
+.mp-row{display:flex; align-items:center; gap:7px; margin-top:10px}
+.mp-mini{width:38px; height:30px; border-radius:9px; border:1px solid rgba(255,255,255,.1);
+  background:rgba(255,255,255,.045); color:#e7eaee; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit}
+.mp-mini:hover{background:rgba(255,255,255,.12)}
+.mp-slider{-webkit-appearance:none; appearance:none; flex:1; height:4px; border-radius:3px;
+  background:rgba(255,255,255,.16); outline:none}
+.mp-slider::-webkit-slider-thumb{-webkit-appearance:none; width:14px; height:14px; border-radius:50%;
+  background:var(--mp-accent); border:2px solid #fff; cursor:pointer}
+.mp-sval{margin-top:7px; text-align:center; font-size:12px; color:#cfe0f0; font-variant-numeric:tabular-nums}
+.mp-acts{display:flex; gap:6px; margin-top:11px; padding-top:10px; border-top:1px solid rgba(255,255,255,.08)}
+.mp-act{flex:1 1 0; height:28px; border-radius:8px; border:1px solid rgba(255,255,255,.1); color:#c8cdd4;
+  font-size:11px; display:flex; align-items:center; justify-content:center; white-space:nowrap}
+.mp-hint{margin-top:8px; font-size:11px; color:#9aa2ad; line-height:1.55}
+
+.preview{border:1px solid var(--line); border-radius:12px; overflow:hidden; margin-bottom:14px}
+.pv-chrome{display:flex; align-items:center; gap:5px; background:var(--accent-soft); padding:7px 10px}
+.pv-dot{width:9px; height:9px; border-radius:50%; background:var(--muted); opacity:.45}
+.pv-url{margin-left:8px; font-size:11px; color:var(--muted)}
+.pv-body{position:relative; height:132px; background:var(--card); padding:14px}
+.pv-block{height:9px; border-radius:5px; background:var(--line); margin-bottom:9px}
+.pv-block.short{width:52%}
+.pv-pair{position:absolute; right:12px; top:14px; display:flex; gap:18px}
+.pv-cell{display:flex; flex-direction:column; align-items:center; gap:5px}
+.pv-cap{font-size:10.5px; color:var(--muted); white-space:nowrap}
+.pv-btn{display:flex; align-items:center; justify-content:center;
+  height:30px; padding:0 10px; border-radius:9px; background:var(--accent); color:#fff; font-size:12px; font-weight:700;
+  box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.mock{position:relative; height:230px; border:1px solid var(--line); border-radius:12px; background:
+  repeating-linear-gradient(90deg, transparent 0 39px, var(--line) 39px 40px),
+  repeating-linear-gradient(0deg, transparent 0 39px, var(--line) 39px 40px);
+  background-color:var(--card); overflow:hidden; cursor:crosshair; margin-bottom:10px}
+.mock-bar{height:26px; background:var(--accent-soft); color:var(--muted); font-size:11.5px; display:flex; align-items:center; padding:0 10px}
+.mock-btn{position:absolute; height:28px; padding:0 10px; display:flex; align-items:center; border-radius:999px;
+  background:var(--accent); color:#fff; font-size:12px; font-weight:700; box-shadow:0 2px 8px rgba(0,0,0,.28); pointer-events:none}
+.list{display:flex; flex-direction:column; gap:6px; margin-top:6px}
+.li{display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--accent-soft);
+  border-radius:9px; padding:7px 11px; font-size:12.5px}
+.li .mono{font-variant-numeric:tabular-nums; color:var(--muted)}
+.li button{border:0; background:transparent; color:var(--muted); cursor:pointer; font-size:14px; line-height:1}
+.li button:hover{color:var(--danger)}
+.empty{color:var(--muted); font-size:12.5px; padding:4px 0}
+.keys{list-style:none; padding:0; margin:6px 0 0}
+.keys li{display:flex; align-items:center; gap:10px; padding:5px 0; font-size:12.5px}
+.keys span{color:var(--muted)}
+kbd{font-family:inherit; font-size:11.5px; background:var(--accent-soft); border:1px solid var(--line);
+  border-radius:6px; padding:2px 6px; font-weight:600}
+.err{color:var(--danger); font-size:12px; min-height:16px; margin-top:6px}
+code{background:var(--accent-soft); padding:1px 5px; border-radius:5px; font-size:12px}
+.ft{display:flex; align-items:center; justify-content:space-between; color:var(--muted); font-size:12px; padding:4px 2px}

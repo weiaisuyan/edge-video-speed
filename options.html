@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>视频速度控制 · 设置</title>
+<link rel="stylesheet" href="options.css">
+</head>
+<body>
+<div class="page">
+  <header class="hd">
+    <div class="hd-main">
+      <h1>视频速度控制</h1>
+      <p class="sub">页面内悬浮速度按钮 · 点一下就能调速</p>
+    </div>
+    <div class="hd-ver"><span id="verTag">v1.0.0</span></div>
+  </header>
+
+  <section class="card">
+    <h2>通用</h2>
+    <div class="row">
+      <div class="row-main">
+        <div class="label">启用扩展</div>
+        <div class="desc">关闭后所有页面都不再显示悬浮按钮，已设置的速度不再施加</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="visible"><span class="track"><span class="thumb"></span></span></label>
+    </div>
+    <div class="row col">
+      <div class="row-main">
+        <div class="label">在哪些页面显示悬浮按钮</div>
+        <div class="desc">默认只在检测到视频的页面出现，避免每个网页都挂一个按钮</div>
+      </div>
+      <div class="seg" id="displayMode">
+        <button type="button" data-v="videoOnly">只在有视频的页面</button>
+        <button type="button" data-v="always">所有页面都显示</button>
+      </div>
+    </div>
+    <div class="row">
+      <div class="row-main">
+        <div class="label">全屏播放时仍然显示按钮</div>
+        <div class="desc">开着：按钮搬进全屏播放器内部，全屏里也能直接调速（全屏元素是 &lt;video&gt; 的站点用浮层显示）。关掉：播放器全屏 / 网站「网页全屏」（如 B站）/ 浏览器 F11 全屏时都把按钮藏起来</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="showInFullscreen"><span class="track"><span class="thumb"></span></span></label>
+    </div>
+    <div class="row">
+      <div class="row-main">
+        <div class="label">跟随网站播放器的调速（推荐）</div>
+        <div class="desc">你在 B站 / 油管自带的播放器里改速度时，扩展会读取并记住它，不会和你抢、不会改回去</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="respectSiteRate"><span class="track"><span class="thumb"></span></span></label>
+    </div>
+    <div class="row">
+      <div class="row-main">
+        <div class="label">加载新视频时自动套用你设定的速度</div>
+        <div class="desc">播放器换到下一个视频时，把你选的速度重新施加一遍（播放中途不会抢）</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="enforce"><span class="track"><span class="thumb"></span></span></label>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>速度档位</h2>
+    <p class="desc">下面这块<b>就是页面上菜单的真实样子</b>（深色面板、三列网格、−+ 与滑杆）：点档位右上角 × 删除；滑杆调的是「没有网站记录时使用的默认速度」，数值实时显示在滑杆下方。范围 0.1×–10×，最多 12 个。</p>
+    <div class="mockpanel" id="mockPanel">
+      <div class="mp-head"><span>播放速度</span><span class="mp-now" id="mpNow">1×</span></div>
+      <div class="mp-chips" id="speedChips"></div>
+      <div class="mp-row">
+        <button class="mp-mini" type="button" id="mpMinus">−</button>
+        <input type="range" class="mp-slider" id="mpSlider" min="0.1" max="10" step="0.05" value="1">
+        <button class="mp-mini" type="button" id="mpPlus">+</button>
+      </div>
+      <div class="mp-sval">当前：<b id="mpSval">1×</b></div>
+      <div class="mp-acts">
+        <span class="mp-act">重置 1×</span>
+        <span class="mp-act">本网站隐藏</span>
+        <span class="mp-act">设置</span>
+      </div>
+      <div class="mp-hint">按住 Ctrl 拖动按钮可移动位置（自动记住）<br>Ctrl+Shift+&gt; 加快 · Ctrl+Shift+&lt; 减慢<br>Ctrl+Shift+0 重置为 1×</div>
+    </div>
+    <div class="addrow">
+      <input type="number" id="newSpeed" min="0.1" max="10" step="0.05" placeholder="例如 1.35">
+      <button class="btn" type="button" id="addSpeed">添加档位</button>
+      <button class="btn ghost" type="button" id="resetSpeeds">恢复默认档位</button>
+    </div>
+    <div class="row">
+      <div class="row-main">
+        <div class="label">按网站记住速度</div>
+        <div class="desc">例如 B站记住 1.5×、油管记住 2×，互不干扰</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="rememberPerSite"><span class="track"><span class="thumb"></span></span></label>
+    </div>
+    <div class="row">
+      <div class="row-main">
+        <div class="label">微调步长（−/+ 按钮、快捷键）</div>
+        <div class="desc" id="stepVal">0.25</div>
+      </div>
+      <input type="range" class="range" id="step" min="0.05" max="1" step="0.05">
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>按钮外观</h2>
+    <p class="desc">下面的预览就是页面上按钮的真实形态（左：鼠标悬停时 / 右：鼠标移开后）。<b>弹出菜单不受不透明度影响，始终 100% 不透明</b>，保证菜单内容看得清。</p>
+    <div class="preview">
+      <div class="pv-chrome">
+        <span class="pv-dot"></span><span class="pv-dot"></span><span class="pv-dot"></span>
+        <span class="pv-url">页面预览</span>
+      </div>
+      <div class="pv-body">
+        <div class="pv-block"></div>
+        <div class="pv-block"></div>
+        <div class="pv-block short"></div>
+        <div class="pv-pair">
+          <div class="pv-cell">
+            <div class="pv-btn" id="pvBtn">1.5×</div>
+            <div class="pv-cap" id="pvCapHover">悬停时 100%</div>
+          </div>
+          <div class="pv-cell">
+            <div class="pv-btn" id="pvBtnIdle">1.5×</div>
+            <div class="pv-cap" id="pvCapIdle">移开后 35%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row col">
+      <div class="label">按钮样式（16 款 · 4 组）</div>
+      <div class="styles" id="styles"></div>
+    </div>
+    <div class="row">
+      <div class="row-main"><div class="label">尺寸</div><div class="desc" id="sizeVal">100%</div></div>
+      <input type="range" class="range" id="size" min="60" max="500" step="5">
+    </div>
+    <div class="row">
+      <div class="row-main"><div class="label">圆角（0 = 直角，50 以上 = 完全胶囊）</div><div class="desc" id="radiusVal">42%</div></div>
+      <input type="range" class="range" id="radius" min="0" max="80" step="1">
+    </div>
+    <div class="row">
+      <div class="row-main"><div class="label">鼠标悬停时不透明度</div><div class="desc" id="hoverOpacityVal">100%</div></div>
+      <input type="range" class="range" id="hoverOpacity" min="10" max="100" step="5">
+    </div>
+    <div class="row">
+      <div class="row-main"><div class="label">鼠标移开后变淡</div><div class="desc">鼠标离开后按钮自动变淡，不挡画面；鼠标一移上去立刻恢复</div></div>
+      <label class="switch"><input type="checkbox" id="idleFade"><span class="track"><span class="thumb"></span></span></label>
+    </div>
+    <div class="row">
+      <div class="row-main"><div class="label">鼠标移开后的不透明度</div><div class="desc" id="idleOpacityVal">35%</div></div>
+      <input type="range" class="range" id="idleOpacity" min="10" max="100" step="5">
+    </div>
+    <div class="row">
+      <div class="row-main"><div class="label">移开后多少秒开始变淡</div><div class="desc" id="idleDelayVal">3 秒</div></div>
+      <input type="range" class="range" id="idleDelay" min="1" max="15" step="1">
+    </div>
+    <div class="row">
+      <div class="row-main"><div class="label">按钮上显示速度数字</div><div class="desc">关闭后只显示一个播放图标</div></div>
+      <label class="switch"><input type="checkbox" id="showNumber"><span class="track"><span class="thumb"></span></span></label>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>按钮位置</h2>
+    <p class="desc">在页面上按住 <b>Ctrl</b> 再用左键拖动悬浮按钮即可移动，位置会自动记住（按窗口百分比存，窗口缩放也不会跑丢）。也可以直接在下面这个模拟窗口里点击/拖动定位，两处同步。<br>（模拟窗口只用于定位，不反映透明度与样式动画——透明度请看上面「按钮外观」里的两态预览）</p>
+    <div class="mock" id="mock">
+      <div class="mock-bar">模拟浏览器窗口</div>
+      <div class="mock-btn" id="mockBtn">1.5×</div>
+    </div>
+    <div class="addrow">
+      <div class="desc">当前位置：<b id="posVal">92% / 10%</b></div>
+      <button class="btn ghost" type="button" id="resetPos">回到右上角</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>键盘快捷键</h2>
+    <div class="row">
+      <div class="row-main"><div class="label">启用快捷键</div><div class="desc">只在页面里有视频时生效，不会干扰其他页面的按键</div></div>
+      <label class="switch"><input type="checkbox" id="hotkeys"><span class="track"><span class="thumb"></span></span></label>
+    </div>
+    <ul class="keys">
+      <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>&gt;</kbd><span>加快一档</span></li>
+      <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>&lt;</kbd><span>减慢一档</span></li>
+      <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>0</kbd><span>重置为 1×</span></li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2>网站排除</h2>
+    <p class="desc">清单里的网站不显示悬浮按钮。条目 <code>zhihu.com</code> 会同时命中它的全部子域。</p>
+    <div class="addrow">
+      <input type="text" id="newSite" placeholder="例如 bilibili.com">
+      <button class="btn" type="button" id="addSite">添加</button>
+    </div>
+    <div class="err" id="siteErr"></div>
+    <div class="list" id="siteList"></div>
+  </section>
+
+  <section class="card">
+    <h2>各网站记住的速度</h2>
+    <p class="desc">只列出<b>不是 1×</b> 的记录——1× 是默认值，不会记在这里，所以这份清单里出现的每个网站都是你主动调过速度的。想清空点下面的按钮。</p>
+    <div class="list" id="rateList"></div>
+    <div class="addrow">
+      <button class="btn ghost" type="button" id="clearRates">清空全部记录</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>备份与恢复</h2>
+    <p class="desc">Edge 的扩展设置不随账号同步，换电脑或重装前可以先导出。</p>
+    <div class="addrow">
+      <button class="btn" type="button" id="exportBtn">导出设置</button>
+      <button class="btn ghost" type="button" id="importBtn">导入设置</button>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    </div>
+    <div class="err" id="backupMsg"></div>
+  </section>
+
+  <footer class="ft">
+    <span>视频速度控制 <span id="verTag2">v1.0.0</span></span>
+    <button class="btn ghost small" type="button" id="resetAll">恢复出厂设置</button>
+  </footer>
+</div>
+<script src="shared.js"></script>
+<script src="options.js"></script>
+</body>
+</html>

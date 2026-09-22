@@ -1,0 +1,78 @@
+/* 视频速度控制 — 工具栏弹窗
+   样式与页面内菜单（content.js 里的 .panel）逐条对齐，保证两处观感一致。
+   只有主题色变量 --vsc-c / --vsc-c-light 由 popup.js 按设置写入。 */
+
+:root {
+  --vsc-c: #5f7285;
+  --vsc-c-light: #a8b3c0;
+}
+
+* { box-sizing: border-box; font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 262px;              /* 12px 内边距 × 2 + 内容 238px，与页面内菜单同宽 */
+  background: rgba(26, 28, 32, .97);
+  color: #eef0f3;
+}
+
+.panel {
+  padding: 12px;
+  background: rgba(26, 28, 32, .97);
+  border-radius: 14px;
+}
+
+/* ---- 标题行：播放速度 + 当前速度 ---- */
+.p-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 9px; }
+.p-title { font-size: 12px; color: #a7adb7; letter-spacing: .4px; }
+.p-now { font-size: 17px; font-weight: 700; color: var(--vsc-c-light); font-variant-numeric: tabular-nums; }
+
+/* ---- 档位网格：三列（与页面菜单一致） ---- */
+.chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.chip {
+  height: 30px; border-radius: 9px; border: 1px solid rgba(255, 255, 255, .1);
+  background: rgba(255, 255, 255, .045); color: #e7eaee;
+  font-size: 12.5px; font-weight: 600; cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  transition: background .14s ease, border-color .14s ease;
+}
+.chip:hover { background: rgba(255, 255, 255, .1); }
+.chip.on { background: var(--vsc-c); border-color: var(--vsc-c); color: #fff; }
+
+/* ---- −  滑杆  + ---- */
+.row { display: flex; align-items: center; gap: 7px; margin-top: 10px; }
+.mini {
+  flex: 0 0 auto; width: 38px; height: 30px; border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, .1); background: rgba(255, 255, 255, .045);
+  color: #e7eaee; font-size: 15px; font-weight: 700; cursor: pointer;
+  line-height: 1; user-select: none;
+}
+.mini:hover { background: rgba(255, 255, 255, .12); }
+.slider {
+  -webkit-appearance: none; appearance: none; flex: 1 1 auto;
+  height: 4px; border-radius: 3px; background: rgba(255, 255, 255, .16); outline: none;
+}
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%;
+  background: var(--vsc-c); border: 2px solid #fff; cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .4);
+}
+
+/* ---- 滑杆下方的当前值 ---- */
+.sval {
+  margin-top: 7px; text-align: center; font-size: 12px; color: var(--vsc-c-light);
+  font-variant-numeric: tabular-nums; letter-spacing: .3px;
+}
+
+/* ---- 操作行 ---- */
+.acts { display: flex; gap: 6px; margin-top: 11px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, .08); }
+.act {
+  flex: 1 1 0; height: 28px; border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, .1); background: transparent;
+  color: #c8cdd4; font-size: 11px; cursor: pointer;
+  white-space: nowrap; padding: 0 4px; overflow: hidden; text-overflow: ellipsis;
+}
+.act:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+
+.hint { margin-top: 8px; font-size: 11px; color: #9aa2ad; line-height: 1.55; }

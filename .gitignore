@@ -1,0 +1,21 @@
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# temp / backup
+*.bak
+*.tmp
+*.log
+__pycache__/
+*.pyc
+
+# 自动化测试产物（探针脚本本身要提交，产物不提交）
+tests/vsc_local_results.json
+tests/vsc_fullscreen_results.json
+tests/fs_*.png
+tests/shot_*.png
+tests/vsc_auto_edge*/
+
+# 商店上传包（按需本地生成，见 tools/build_zip.py）
+store/*.zip

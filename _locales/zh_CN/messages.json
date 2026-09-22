@@ -1,0 +1,6 @@
+{
+  "app_name": { "message": "视频速度控制" },
+  "extension_name": { "message": "视频速度控制（页面悬浮）" },
+  "extension_description": { "message": "按钮画在网页内部的播放速度控制器：点一下就能调视频倍速（0.1×–10×，档位可自定义），按网站记住速度，装在电脑上的「应用窗口」里同样能用。" },
+  "action_title": { "message": "视频速度控制" }
+}

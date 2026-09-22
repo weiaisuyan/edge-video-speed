@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>VSC 全屏场景测试页</title>
+<style>
+  html,body{margin:0;padding:0}
+  body{font:14px/1.6 "Segoe UI","Microsoft YaHei",sans-serif;color:#222;background:#fff}
+  .doc{padding:16px}
+  .player video{display:block;background:#000;width:480px}
+  #fsbox{width:480px;height:150px;background:#dfe4ea;border-radius:8px;margin:10px 0;
+         display:flex;align-items:center;justify-content:center;color:#333}
+  button{margin:4px 6px 4px 0}
+  /* 网页伪全屏（网站自己的 CSS 全屏，例如 B站「网页全屏」）：播放器铺满整个视口。
+     具体尺寸由 enterFake()/enterFake80() 用内联样式写死，避免继承默认值导致的量不准 */
+  body.fake .doc, body.fake80 .doc{display:none}
+  body.fake .player, body.fake80 .player{position:fixed;z-index:99999;background:#000}
+  body.fake .player{left:0;top:0;width:100vw;height:100vh}
+  body.fake80 .player{left:10vw;top:10vh;width:80vw;height:80vh}
+  /* 伪全屏的「信箱化」形态：fixed 容器铺满视口，视频只占中间一条（窗口比例与视频不一致时就是这样） */
+  body.fakelb .doc{display:none}
+  body.fakelb .player{position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:99999;background:#000}
+</style>
+</head>
+<body>
+<div class="doc">
+  <h1>VSC 全屏场景测试页</h1>
+  <div id="fsbox">全屏容器（原生全屏，视频不在里面）</div>
+  <p>
+    <button id="btn-native-box" type="button">原生全屏：容器</button>
+    <button id="btn-native-video" type="button">原生全屏：video 元素</button>
+    <button id="btn-native-doc" type="button">原生全屏：整个 html</button>
+    <button id="btn-fake" type="button">网页伪全屏（铺满视口）</button>
+    <button id="btn-fake80" type="button">网页伪全屏（只有 80%）</button>
+    <button id="btn-fake-off" type="button">退出伪全屏</button>
+  </p>
+</div>
+<div class="player">
+  <video id="v1" src="sample.mp4" controls muted loop preload="auto"></video>
+</div>
+<script>
+  var v = document.getElementById('v1');
+  window.fsState = function () {
+    var el = document.fullscreenElement;
+    return {fsEl: el ? (el.id || el.tagName) : null, fake: document.body.classList.contains('fake')};
+  };
+  window.enterNativeBox = function () { return document.getElementById('fsbox').requestFullscreen(); };
+  window.enterNativeVideo = function () { return v.requestFullscreen(); };
+  window.enterNativeDoc = function () { return document.documentElement.requestFullscreen(); };
+  window.enterFake = function () { document.body.classList.add('fake'); return true; };
+  window.enterFake80 = function () { document.body.classList.add('fake80'); return true; };
+  window.exitFake = function () { document.body.classList.remove('fake'); document.body.classList.remove('fake80'); return true; };
+  window.exitFs = function () { return document.exitFullscreen(); };
+  window.playVideo = function () { return v.play().then(function(){return true;}).catch(function(e){return String(e);}); };
+  window.setVideoPercent = function (w, h) {
+    v.style.width = w + 'vw'; v.style.height = h + 'vh';
+    v.style.objectFit = 'contain'; v.style.filter = 'brightness(0)';
+    return true;
+  };
+  window.resetVideoSize = function () {
+    v.style.width = ''; v.style.height = ''; v.style.objectFit = ''; v.style.filter = '';
+    return true;
+  };
+  window.enterFake = function () { document.body.classList.add('fake'); window.setVideoPercent(100, 100); return true; };
+  window.enterFake80 = function () { document.body.classList.add('fake80'); window.setVideoPercent(80, 80); return true; };
+  window.enterFakeLetterbox = function () { document.body.classList.add('fakelb'); window.setVideoPercent(100, 70); return true; };
+  window.exitFake = function () {
+    document.body.classList.remove('fake'); document.body.classList.remove('fake80'); document.body.classList.remove('fakelb');
+    window.resetVideoSize();
+    return true;
+  };
+  document.getElementById('btn-native-box').addEventListener('click', window.enterNativeBox);
+  document.getElementById('btn-native-video').addEventListener('click', window.enterNativeVideo);
+  document.getElementById('btn-native-doc').addEventListener('click', window.enterNativeDoc);
+  document.getElementById('btn-fake').addEventListener('click', window.enterFake);
+  document.getElementById('btn-fake80').addEventListener('click', window.enterFake80);
+  document.getElementById('btn-fake-off').addEventListener('click', window.exitFake);
+</script>
+</body>
+</html>

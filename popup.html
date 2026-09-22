@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>视频速度控制</title>
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+<!-- 结构与页面内菜单 (.panel) 完全一致：标题+当前速度 / 档位网格 / −滑杆+ / 当前值 / 操作 / 提示 -->
+<div class="panel" id="panel">
+  <div class="p-head">
+    <span class="p-title">播放速度</span>
+    <span class="p-now" id="pNow">1×</span>
+  </div>
+
+  <div class="chips" id="chips"></div>
+
+  <div class="row">
+    <button class="mini" type="button" data-act="minus">−</button>
+    <input class="slider" type="range" id="slider" min="0.1" max="10" step="0.05" value="1">
+    <button class="mini" type="button" data-act="plus">+</button>
+  </div>
+
+  <div class="sval">当前：<b class="sval-num" id="svalNum">1×</b></div>
+
+  <div class="acts">
+    <button class="act" type="button" data-act="reset">重置 1×</button>
+    <button class="act" type="button" data-act="hide">本网站隐藏</button>
+    <button class="act" type="button" data-act="options">设置</button>
+  </div>
+
+  <div class="hint" id="hint">选择档位或拖动滑杆，本网站立即生效</div>
+</div>
+
+<script src="shared.js"></script>
+<script src="popup.js"></script>
+</body>
+</html>
