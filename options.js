@@ -266,12 +266,10 @@
   function renderRates() {
     var box = $('rateList');
     box.innerHTML = '';
-    // 1× = 默认值，不列出来（只显示你主动调过的非 1× 记录）
-    var keys = Object.keys(st.siteSpeeds || {}).filter(function (k) {
-      return Math.abs(Number(st.siteSpeeds[k]) - 1) > 0.001;
-    });
+    // 所有记录都列出来（包括 1×，它现在也是合法的记忆值）
+    var keys = Object.keys(st.siteSpeeds || {});
     if (!keys.length) {
-      box.innerHTML = '<div class="empty">暂无记录（1× 不记录；在页面上调过非 1× 的速度后就会出现在这里）</div>';
+      box.innerHTML = '<div class="empty">暂无记录（在页面上或工具栏调过速度后就会出现在这里）</div>';
       return;
     }
     keys.sort().forEach(function (k) {

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>v1.0.5 记忆回归 · 真实媒体 + 真实事件</title>
+<style>
+body{background:#1e232b;color:#dfe4ea;font:14px/1.7 "Microsoft YaHei",sans-serif;margin:0;padding:24px}
+h2{font-size:16px;margin:0 0 6px}
+.sub{color:#8b95a3;font-size:12px;margin:0 0 16px}
+.player{width:640px;height:360px;background:#000;position:relative;margin:12px 0}
+.player video{width:100%;height:100%;object-fit:contain}
+#log{background:#141a21;border:1px solid #2a323c;border-radius:8px;padding:12px;margin-top:12px;
+  font:12px/1.5 Consolas,monospace;max-height:300px;overflow:auto;white-space:pre-wrap}
+.dim{color:#7d8794} .ok{color:#7fc4a0}
+</style>
+</head>
+<body>
+<h2>v1.0.5 记忆回归测试</h2>
+<p class="sub">真实媒体源（sample.mp4，纯视频无音轨）+ 真实 pointer/keydown 事件。测试由 CDP 驱动，不调用 play()。</p>
+
+<div class="player" id="player">
+  <video id="v" src="./sample.mp4" preload="metadata" muted playsinline></video>
+</div>
+<div id="log"></div>
+
+<script>
+(function () {
+  'use strict';
+  var v = document.getElementById('v');
+  var log = document.getElementById('log');
+  var REC = [];
+  v.muted = true;
+  v.volume = 0;
+
+  function p(s, cls) {
+    var d = document.createElement('div');
+    d.className = cls || 'dim';
+    d.textContent = s;
+    log.appendChild(d);
+    log.scrollTop = log.scrollHeight;
+  }
+  function btnText() {
+    var h = document.querySelector('[data-vsc]');
+    if (!h || !h.shadowRoot) return null;
+    var b = h.shadowRoot.querySelector('.btn');
+    return b ? b.textContent.trim() : null;
+  }
+  function snap(tag) {
+    var r = { tag: tag, rate: v.playbackRate, defaultRate: v.defaultPlaybackRate,
+              btn: btnText(), readyState: v.readyState, t: Date.now() };
+    REC.push(r);
+    p(tag + ' → rate=' + r.rate + '  按钮=' + r.btn + '  readyState=' + r.readyState, 'ok');
+    return r;
+  }
+  function pointerOn(el, type, buttons) {
+    var r = el.getBoundingClientRect();
+    var o = { bubbles: true, composed: true, cancelable: true, view: window,
+              clientX: r.left + r.width / 2, clientY: r.top + r.height / 2,
+              pointerId: 1, pointerType: 'mouse', isPrimary: true,
+              button: 0, buttons: buttons === undefined ? 1 : buttons };
+    el.dispatchEvent(new PointerEvent(type, o));
+  }
+
+  window.__vscT = {
+    video: v,
+    log: REC,
+    btnText: btnText,
+    snap: snap,
+    // ① 站点把速度拨回 1×（纯脚本，无任何用户输入）——真实站点的行为
+    siteReset: function () { p('— 站点重置为 1×（无输入）—'); v.playbackRate = 1; return v.playbackRate; },
+    // ② 点一下视频 = 播放/暂停，并不改速度
+    tapVideo: function () {
+      p('— 点一下视频（播放/暂停，不改速度）—');
+      pointerOn(v, 'pointerdown', 1);
+      pointerOn(v, 'pointerup', 0);
+      return true;
+    },
+    // ③ 在播放器区域内点一下，随即改速度（模拟用站点自带菜单调速）
+    manualClick: function (rate) {
+      p('— 在播放器上点一下 + 改速度 → ' + rate + '× —');
+      pointerOn(v, 'pointerdown', 1);
+      pointerOn(v, 'pointerup', 0);
+      v.playbackRate = rate;
+      return v.playbackRate;
+    },
+    // ④ 用调速快捷键（YouTube 是 Shift+. / Shift+,，key 为 '>' / '<'）
+    manualKey: function (rate, key) {
+      p('— 按调速快捷键 ' + (key || '>') + ' + 改速度 → ' + rate + '× —');
+      ['keydown', 'keyup'].forEach(function (t) {
+        document.dispatchEvent(new KeyboardEvent(t, {
+          key: key || '>', code: 'Period', bubbles: true, composed: true,
+          shiftKey: true, ctrlKey: false, metaKey: false, altKey: false
+        }));
+      });
+      v.playbackRate = rate;
+      return v.playbackRate;
+    },
+    // ⑤ 换素材（触发 loadstart / emptied / loadedmetadata → 扩展的 markLoad）
+    reloadMedia: function () {
+      p('— 站点重新加载素材（v.load()）—');
+      v.load();
+      return true;
+    },
+    silence: function () { v.muted = true; v.volume = 0; return true; }
+  };
+  p('页面就绪（video src=sample.mp4, preload=metadata, muted）', 'ok');
+})();
+</script>
+</body>
+</html>

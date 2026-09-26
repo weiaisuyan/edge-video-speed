@@ -180,14 +180,19 @@ check("P6 按网站记忆写入 storage", 1.5, (store_get(sid_con) or {}).get("s
 check("P6 面板仍打开（可连续试速度）", True, cdp.ev(sid_v, JS_PANEL))
 cdp.shot(sid_v, os.path.join(OUT, "shot_page_panel.png"))
 
-# ---------- P7 「你在网站播放器上手动调速」（有真实点击）→ 跟随，不抢回 ----------
-cdp.click(sid_v, 320, 640)                                  # 真实点击页面 = 你在播放器上操作
+# ---------- P7 「你在网站播放器上手动调速」（在播放器上真实点击）→ 跟随，不抢回 ----------
+# 注意：必须点在「视频上」。v1.0.5 起判据是「点击坐标落在视频内 或 目标属于播放器容器」，
+# 以前随便点页面任意位置都算——那不真实（点页面空白处并不是在调速度）。
+_vr = cdp.ev(sid_v, "(()=>{const r=document.getElementById('v1').getBoundingClientRect();"
+                    "return {x:r.left+r.width/2,y:r.top+r.height/2}})()")
+cdp.click(sid_v, _vr["x"], _vr["y"])                        # 真实点击「播放器」= 你在调速度
 cdp.ev(sid_v, "window.siteReset()", await_promise=False)    # 播放器随即将速度设为 1×
 time.sleep(0.8)
 check("P7 手动调速（带真实点击）→ 不被抢回（跟随 1×）", [1], cdp.ev(sid_v, JS_RATES))
 check("P7 跟随并同步按钮文字", "1×", cdp.ev(sid_v, JS_BTN))
-check("P7 跟随并记住（1× 不记录，storage 里应无该站记录）", False,
-      (store_get(sid_con) or {}).get("siteSpeeds", {}).get("127.0.0.1") is not None,
+# v1.0.5 行为变更：1× 也是合法选择，照常记住（旧版这里是「1× 不记录」）
+check("P7 跟随并记住（1× 也记录）", 1.0,
+      (store_get(sid_con) or {}).get("siteSpeeds", {}).get("127.0.0.1"),
       (store_get(sid_con) or {}).get("siteSpeeds"))
 # 回到 1.5× 继续后续用例
 open_panel(sid_v)
@@ -254,7 +259,8 @@ v2pos = cdp.ev(sid_v2, "(()=>{const h=document.querySelector('[data-vsc]');const
 check("P11 新标签页沿用记住的位置（±1%）", True,
       abs(v2pos["x"] - posX_now) <= 1 and abs(v2pos["y"] - posY_now) <= 1,
       "存储=%s/%s 新页实测=%s/%s" % (posX_now, posY_now, v2pos["x"], v2pos["y"]))
-check("P11 新标签页速度也按网站记忆（1.75×）", [1.75], cdp.ev(sid_v2, JS_RATES))
+check("P11 新标签页速度也按网站记忆", [sp.get("siteSpeeds", {}).get("127.0.0.1")],
+      cdp.ev(sid_v2, JS_RATES), "storage 记录=%s" % sp.get("siteSpeeds", {}).get("127.0.0.1"))
 cdp.send("Target.closeTarget", {"targetId": tid_v2})
 cdp.activate(tid_v)
 time.sleep(0.3)
@@ -298,7 +304,8 @@ cdp.activate(tid_i)
 time.sleep(0.3)
 check("P15 iframe 页：顶层按钮可见（同源 iframe 里的视频也算本页有视频）", True, cdp.ev(sid_i, JS_VISIBLE))
 iframe_rate = cdp.ev(sid_i, "(()=>{const v=document.querySelector('iframe').contentDocument.querySelector('video');return v?v.playbackRate:null})()")
-check("P15 iframe 内 video playbackRate 跟随（此时站点记忆=1.75×）", 1.75, iframe_rate)
+_sp15 = (store_get(sid_con) or {}).get("siteSpeeds", {}).get("127.0.0.1")
+check("P15 iframe 内 video playbackRate 跟随站点记忆", _sp15, iframe_rate, "storage=%s" % _sp15)
 
 # ---------- P16 全屏（用页面自己的按钮触发真实用户手势） ----------
 try:
@@ -476,24 +483,22 @@ check("P27 关闭数字 → 只显示图标", [True, ""], [icon_only["svg"], ico
 check("P27 再打开数字 → 数字/乘号结构恢复（不是空白）", True,
       back_num["txt"] != "" and back_num["x"] and not back_num["svg"], back_num)
 
-# ---------- P26 1× 不记录、不显示 ----------
+# ---------- P26 1× 也是合法记忆值：记录、显示、都能恢复 ----------
+# v1.0.5 改了规则：1× 不再被当作「取消记忆」，所以旧断言（1× 不显示/不记录）已随新行为更新
 store_patch(sid_con, "s.siteSpeeds={'a.com':1.25,'b.com':1,'c.com':2}")
 time.sleep(0.5)
 cdp.send("Page.reload", session=sid_opt)
 time.sleep(1.8)
 lst = cdp.ev(sid_opt, "Array.from(document.querySelectorAll('#rateList .li')).map(e=>e.textContent.trim().slice(0,24))")
-check("P26 清单只显示非 1× 的记录", True,
-      any("a.com" in x for x in lst) and any("c.com" in x for x in lst) and not any("b.com" in x for x in lst), lst)
-note26 = cdp.ev(sid_opt, "(()=>{const c=[...document.querySelectorAll('.card')].find(x=>/各网站记住的速度/.test(x.textContent));"
-                         "return c?c.querySelector('.desc').textContent:null})()")
-check("P26 卡片有「只列出不是 1×」备注", True, bool(note26 and "不是 1×" in note26), (note26 or "")[:36])
+check("P26 清单显示全部记录（含 1×）", True,
+      any("a.com" in x for x in lst) and any("c.com" in x for x in lst) and any("b.com" in x for x in lst), lst)
 store_patch(sid_con, "s.siteSpeeds={'127.0.0.1':2}")
 time.sleep(0.6)
 cdp.ev(sid_v, "(()=>{const h=document.querySelector('[data-vsc]');for(const c of h.shadowRoot.querySelectorAll('.chip')){"
               "if(c.textContent.trim()==='1×'){c.click();break;}}return 1})()")
 time.sleep(0.7)
 sp26 = (store_get(sid_con) or {}).get("siteSpeeds", {})
-check("P26 在页面设回 1× → 该站记录被删除", False, "127.0.0.1" in sp26, sp26)
+check("P26 在页面设 1× → 记录保留为 1（不再被删除）", 1.0, sp26.get("127.0.0.1"), sp26)
 
 # ---------- P28 圆角可调（0 / 42 / 50 / 80） ----------
 rad = {}

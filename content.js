@@ -28,6 +28,13 @@
   var loadTs = new WeakMap();   // 每个 video 最近一次「换素材」的时间戳
   var FRESH_MS = 1200;          // 换素材后 1.2s 内的速率变化 = 站点默认值（可覆盖）；之后 = 用户手动调速（跟随）
   var lastInputTs = 0;          // 页面上最近一次真实用户输入（点击/按键）的时间戳
+  var lastPlayerInputTs = 0;    // 最近一次「在播放器上」的真实调速意图（点击落在视频上 / 调速快捷键）
+  var USER_INPUT_MS = 2500;     // 「页面上刚有输入」的窗口（用来区分脚本改写 vs 真人在操作）
+  var PLAYER_INPUT_MS = 1000;   // 「这次输入与速率变化有因果关系」的窗口——必须紧，才能排除巧合
+  var SITE_LOAD_GRACE = 2000;   // 换素材后的宽限期：这期间的速率变化算站点自己的默认值，不采纳
+  var stickyArmedAt = 0;        // 「防误判」武装时间：我们主动写入速率的时刻；0 = 未武装
+  var APPLY_STICKY_MS = 3000;   // 武装后这段时间内，站点来改一律算「抢回默认值」，不认
+  var reapplying = false;       // 正在「补写被站点抢回的速度」——这种写入不算主动施加，不再重新武装
 
   /* ---------- 设置 ---------- */
 
@@ -56,9 +63,9 @@
     next.globalSpeed = rate;
     var key = S.hostKey(location.hostname);
     if (settings.rememberPerSite) {
-      // 1× 是默认值，不写记录（设置页里也只看得到非 1× 的网站）
-      if (Math.abs(rate - 1) < 0.001) delete next.siteSpeeds[key];
-      else next.siteSpeeds[key] = rate;
+      // 1× 也是用户的合法选择，照常记忆（修 v1.0.5 前的 bug：以前这里直接删记录，
+      // 导致 YouTube 把速度重置为 1× 时，你的记忆被抹掉，下次进站点又从 1× 开始）
+      if (rate > 0) next.siteSpeeds[key] = rate;
     }
     settings = next;
     S.saveSettings(next);
@@ -89,15 +96,128 @@
 
   // 站点刚换素材（事件窗口内）→ 此时站点设的速率算默认值，可被我们覆盖
   function justLoaded(v) {
-    return (Date.now() - (loadTs.get(v) || 0)) < 1200;
+    return (Date.now() - (loadTs.get(v) || 0)) < FRESH_MS;
+  }
+
+  // 标记「这个 video 刚换了素材」——记录时间戳，供 justLoaded / inSiteLoadGrace 判断。
+  // v1.0.4 漏了这个定义：loadstart/emptied/loadedmetadata 三处都在调它，但函数不存在，
+  // 一调就抛 ReferenceError，导致 loadTs 永远是空的 → 「刚换素材」判据全线失效，
+  // 于是站点把速度重置为 1× 总被误判成「用户手动调速」，记忆被反复抹掉。
+  function markLoad(v) {
+    try {
+      loadTs.set(v, Date.now());
+      // 换了素材 = 新的播放会话，武装状态清零，从头开始判
+      if (v) { stickyArmedAt = 0; reapplying = false; }
+    } catch (e) { /* WeakMap 只接受对象 */ }
   }
 
   // 页面上刚有真实用户输入（点击/按键）→ 速率变化大概率来自「你在网站播放器上手动调速」
   function userRecent(ms) {
-    return (Date.now() - lastInputTs) < (ms || 2500);
+    return (Date.now() - lastInputTs) < (ms || USER_INPUT_MS);
   }
 
-  function noteInput() { lastInputTs = Date.now(); }
+  // 站点刚换素材后的宽限期内 → 一律视为「站点自己设的默认值」，不采纳。
+  // 为什么需要它：YouTube 等站点常常在 loadedmetadata 之后几百 ms 到两秒才把速度拨回 1×。
+  // 为什么只给 2s（v1.0.5 曾用 6s，实测会把你开头的真实调速也压掉）：宽限期太长会误伤
+  // 「打开视频后马上自己调速」这个正常操作。更晚发生的站点重置由「黏滞期 + enforce 兜底」负责。
+  function inSiteLoadGrace(v) {
+    return (Date.now() - (loadTs.get(v) || 0)) < SITE_LOAD_GRACE;
+  }
+
+  // 判定「这是不是你在播放器上手动调速」——三条同时成立才认：
+  //   ① 设置里开着 respectSiteRate
+  //   ② 页面上最近有输入（排除纯脚本改写）
+  //   ③ 播放器上有**紧因果**的输入（默认 1s 内）——这一条优先于一切：
+  //      点播放器后站点随即改速度 = 你在用站点自带菜单调速，必须跟随
+  //   ④ 不在「站点刚换素材」的宽限期内
+  // 注意：这里刻意**不**被「黏滞期」挡住。黏滞期是给「页面上没有任何输入、站点自己把速度
+  // 拨回默认值」准备的；若你确有播放器上的紧因果输入，那是你的操作，不能被黏滞期盖掉
+  // （v1.0.5 实测踩到：用我们面板设完速度后 3s 内，你在播放器里调速会被硬顶回去）。
+  function isManualAdjust(v) {
+    if (!settings.respectSiteRate) return false;
+    if (!userRecent()) return false;
+    if (inSiteLoadGrace(v)) return false;
+    return (Date.now() - lastPlayerInputTs) < PLAYER_INPUT_MS;
+  }
+
+  // 站点把速度抢回了默认值 → 重新施加我们记住的速度。
+  // 黏滞期只服务「一次」：命中后立刻解除武装，并且由 reapplying 保证随之而来的补写不再重新武装，
+  // 否则 applyOne→站点重置→applyOne 会无限续期，把你真实的点击也一并挡掉。
+  function isSiteReset(v) {
+    if (inSiteLoadGrace(v)) return true;
+    if (stickyArmedAt && (Date.now() - stickyArmedAt) < APPLY_STICKY_MS) {
+      stickyArmedAt = 0;          // 解除武装：这一轮只认一次
+      reapplying = true;          // 接下来的补写不算「主动施加」，不许再武装
+      return true;
+    }
+    return false;
+  }
+
+  // 任何一次「用户主动改速」都解除武装（新的一次交互，从干净状态开始判）
+  function resetStick() {
+    stickyArmedAt = 0;
+  }
+
+  // 点击坐标是否落在某个视频的矩形内（外扩 pad，覆盖悬浮控制条）。
+  // 用坐标判断而不是赌某个站点的类名——v1.0.5 一开始把 YouTube 的容器类名写成
+  // 'html-video-player'（真实是 'html5-video-player'，少了那个 5），导致在油管菜单里
+  // 调速被判成「站点重置」而抢回。坐标法不依赖类名，任何站点都成立。
+  function pointInVideo(x, y, pad) {
+    for (var i = 0; i < videos.length; i++) {
+      var v = videos[i];
+      if (!v || !v.isConnected) continue;
+      var r;
+      try { r = v.getBoundingClientRect(); } catch (e) { continue; }
+      if (!r || r.width < 8 || r.height < 8) continue;
+      if (x >= r.left - pad && x <= r.right + pad && y >= r.top - pad && y <= r.bottom + pad) return true;
+    }
+    return false;
+  }
+
+  // 事件目标是否属于「播放器」：video 自身，或带 player 字样的容器
+  // （兼容 html5-video-player / html-video-player / bw-video-player / movie_player 等写法）
+  function targetInPlayer(t) {
+    for (var node = t, d = 0; d < 8 && node; d++) {
+      if (node.tagName === 'VIDEO') return true;
+      var cls = node.className, id = node.id;
+      if (typeof cls === 'string' && /video-?player|player-?(wrap|box|container)|movie_player/i.test(cls)) return true;
+      if (typeof id === 'string' && /movie_player|player/i.test(id)) return true;
+      node = node.parentNode || node.host;
+    }
+    return false;
+  }
+
+  // 只认「真的在调速度」的按键：> < ] [（YouTube / B站 / 多数站点的倍速快捷键）。
+  // 空格、方向键、K/J/L 是播放控制，不是调速 → 不算，否则会被误当成「你要改速度」。
+  function isSpeedKey(e) {
+    if (!e || e.ctrlKey || e.metaKey || e.altKey) return false;   // 带修饰键的是我们自己的/浏览器的
+    var k = e.key;
+    return k === '>' || k === '<' || k === ']' || k === '[';
+  }
+
+  function noteInput(e) {
+    if (!e) return;
+    // 我们自己悬浮按钮/面板上的操作不算——那是显式调速，走 setRate 自己的路径
+    try {
+      if (host && e.composedPath && e.composedPath().indexOf(host) !== -1) return;
+    } catch (err) { /* 忽略 */ }
+
+    lastInputTs = Date.now();
+    try {
+      if (e.type === 'keydown') {
+        // 键盘：调速快捷键，或焦点在播放器上时，才认定为调速意图
+        if (isSpeedKey(e) || targetInPlayer(e.target)) lastPlayerInputTs = Date.now();
+        return;
+      }
+      // 指针：优先用坐标判断（不赌类名），坐标不可用时再看目标节点
+      var x = e.clientX, y = e.clientY;
+      if (typeof x === 'number' && typeof y === 'number' && pointInVideo(x, y, 80)) {
+        lastPlayerInputTs = Date.now();
+        return;
+      }
+      if (targetInPlayer(e.target)) lastPlayerInputTs = Date.now();
+    } catch (err) { /* 忽略 */ }
+  }
 
   function watchVideo(v) {
     if (!v || v.__vsc_watched) return;
@@ -113,9 +233,15 @@
     v.addEventListener('ratechange', function () {
       if (applying) return;
       var r = Number(v.playbackRate) || 1;
-      // 有真实用户输入 + 不是换素材瞬间 → 判定为「你在网站播放器上手动调速」：读取并记住，绝不抢回
-      if (settings.respectSiteRate && userRecent() && !justLoaded(v)) {
+      // 判定为「你在网站播放器上手动调速」：读取并记住，绝不抢回。
+      // 判据收紧后（isManualAdjust）：站点把速度重置为 1× 不再被误当成你的选择。
+      if (isManualAdjust(v)) {
         adoptFromSite(r);
+        return;
+      }
+      // 站点自己重置了速度 → 视为「站点默认值」，重新施加我们记住的速度（不弹提示）
+      if (isSiteReset(v)) {
+        applyOne(v);
         return;
       }
       if (settings.enforce && Math.abs(r - currentRate) > 0.001) applyOne(v);
@@ -124,13 +250,15 @@
 
   // 网站播放器手动调速 → 采纳为当前速度并记住
   function adoptFromSite(r) {
-    var v = clampRate(r);
-    if (Math.abs(v - currentRate) < 0.001) return;
-    currentRate = v;
+    var val = clampRate(r);
+    if (Math.abs(val - currentRate) < 0.001) return;
+    currentRate = val;
+    // 这是「你手动调的」，不是站点重置 → 解除黏滞武装
+    resetStick();
     setButtonText();
     syncPanelHighlight();
-    persistRate(v);
-    showToast('跟随播放器 ' + S.fmt(v));
+    persistRate(val);
+    showToast('跟随播放器 ' + S.fmt(val));
   }
 
   function applyOne(v) {
@@ -142,6 +270,15 @@
         applying = true;
         v.playbackRate = currentRate;
         applying = false;
+        // 武装「防误判」：站点接下来把速度拨回默认值时，要认得出那是站点在抢，而不是你手动调的
+        // （v1.0.5 实测踩到：YouTube 加载后几百 ms~几秒就把速度拨回 1×）
+        // 但「补写被抢回的速度」这种写入不算主动施加，否则 applyOne→站点重置→applyOne
+        // 会无限续期，把你真实的点击也一并挡掉。
+        if (reapplying) {
+          reapplying = false;
+        } else {
+          stickyArmedAt = Date.now();
+        }
       }
     } catch (e) {
       applying = false;
@@ -639,6 +776,9 @@
     var r = clampRate(rate);
     var changed = Math.abs(r - currentRate) > 0.0001;
     currentRate = r;
+    // 用户主动调速：新的一次交互，把黏滞期状态清干净（否则刚施加完的 3s 内
+    // 站点任何改写都会被当成「抢回默认值」，你紧接着的第二次调整就不被认了）
+    resetStick();
     applyAll();
     setButtonText();
     syncPanelHighlight();

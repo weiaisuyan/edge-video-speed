@@ -12,9 +12,22 @@ from websockets.sync.client import connect  # noqa: E402
 
 
 def http_json(port, path):
+    """探测 CDP HTTP 端点。
+
+    注意：headless 模式下 Edge 会把调试端口绑到 IPv6 回环 [::1] 上，
+    http://127.0.0.1:port 会连不上（表现为 cdp_ready=000 / 连接被拒）。
+    所以这里依次尝试 127.0.0.1、[::1]、localhost。
+    """
     op = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-    with op.open("http://127.0.0.1:%d%s" % (port, path), timeout=8) as r:
-        return json.loads(r.read().decode("utf-8"))
+    last = None
+    for host in ("127.0.0.1", "[::1]", "localhost"):
+        try:
+            with op.open("http://%s:%d%s" % (host, port, path), timeout=8) as r:
+                return json.loads(r.read().decode("utf-8"))
+        except Exception as e:      # noqa: BLE001
+            last = e
+            continue
+    raise RuntimeError("无法连接 CDP 端点 (port=%d): %s" % (port, last))
 
 
 class CDP:

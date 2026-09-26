@@ -65,9 +65,8 @@
     var r = clampRate(rate);
     var next = Object.assign({}, st);
     next.siteSpeeds = Object.assign({}, st.siteSpeeds);
-    // 1× 是默认值，不写记录（与页面内菜单一致，否则设置页「各网站记住的速度」会留下看不见的脏记录）
-    if (st.rememberPerSite && Math.abs(r - 1) < 0.001) delete next.siteSpeeds[host];
-    else next.siteSpeeds[host] = r;
+    // 1× 也是合法选择，照常记录（与页面内 persistRate 保持一致）
+    if (st.rememberPerSite) next.siteSpeeds[host] = r;
     next.globalSpeed = r;
     st = next;
     siteRate = r;
