@@ -681,7 +681,8 @@
 
   function renderPanel() {
     if (!panelEl) return;
-    var speeds = (settings.speeds || []).slice().sort(function (a, b) { return a - b; });
+    // 档位顺序按设置里的数组顺序（用户可在设置页按住拖动排序）
+    var speeds = settings.speeds || [];
     var html = '<div class="p-head"><span class="p-title">播放速度</span>' +
       '<span class="p-now">' + S.fmt(currentRate) + '</span></div><div class="chips">';
     for (var i = 0; i < speeds.length; i++) {
@@ -702,7 +703,7 @@
       '<button class="act" type="button" data-act="hide">本网站隐藏</button>' +
       '<button class="act" type="button" data-act="options">设置</button>' +
       '</div>' +
-      '<div class="hint">按住 Ctrl 拖动按钮可移动位置（自动记住）<br>Ctrl+Shift+&gt; 加快 · Ctrl+Shift+&lt; 减慢<br>Ctrl+Shift+0 重置为 1×</div>';
+      '<div class="hint">按住 Ctrl 拖动按钮可移动位置（自动记住）<br>本网站隐藏后：点浏览器工具栏的扩展图标 → 「本网站显示」即可恢复<br>Ctrl+Shift+&gt; 加快 · Ctrl+Shift+&lt; 减慢 · Ctrl+Shift+0 重置为 1×</div>';
     panelEl.innerHTML = html;
 
     panelEl.querySelectorAll('.chip').forEach(function (c) {
@@ -768,6 +769,8 @@
     }
     closePanel();
     refreshVisibility();
+    // 按钮已经消失，必须在消失前把「怎么恢复」说清楚（v1.1.0）
+    showToast('已隐藏 · 点工具栏图标可恢复');
   }
 
   /* ---------- 调速 ---------- */

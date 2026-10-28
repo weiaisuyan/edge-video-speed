@@ -50,7 +50,8 @@
 
     var box = $('chips');
     box.innerHTML = '';
-    (st.speeds || []).slice().sort(function (a, b) { return a - b; }).forEach(function (v) {
+    // 档位顺序按设置里的数组顺序（用户在设置页拖动排序），不再按数值重排
+    (st.speeds || []).forEach(function (v) {
       var num = Number(v);
       var b = document.createElement('button');
       b.type = 'button';
@@ -85,7 +86,7 @@
         if (act === 'plus') setRate(currentRate() + Number(st.step));
         else if (act === 'minus') setRate(currentRate() - Number(st.step));
         else if (act === 'reset') setRate(1);
-        else if (act === 'hide') hideCurrentSite();
+        else if (act === 'hide') toggleSite();      // 本网站隐藏 / 本网站显示（同一个按钮来回切）
         else if (act === 'options') { chrome.runtime.openOptionsPage(); window.close(); }
       });
     });
@@ -95,16 +96,40 @@
     });
   }
 
-  function hideCurrentSite() {
+  /* 本网站隐藏 / 本网站显示 —— 同一个按钮两态。
+     v1.0.6 之前只有「隐藏」，点了按钮就 disabled、只能去设置页手工删条目，
+     用户没法从这里恢复（报障：不能光隐藏没有显示）。现在再点一次就把它显示回来。 */
+  function excludedNow() {
+    return !!host && S.isSiteExcluded(st.excludedSites, host);
+  }
+
+  function renderSiteToggle() {
+    var b = document.querySelector('[data-act="hide"]');
+    if (!b) return;
+    var off = excludedNow();
+    b.textContent = off ? '本网站显示' : '本网站隐藏';
+    b.title = off ? '把本网站从排除清单里移除，悬浮按钮重新出现' : '把本网站加入排除清单，悬浮按钮不再出现';
+    b.classList.toggle('on', off);
+    b.disabled = false;
+  }
+
+  function toggleSite() {
     if (!host) return;
     var next = Object.assign({}, st);
-    if (!S.isSiteExcluded(next.excludedSites, host)) {
-      next.excludedSites = next.excludedSites.concat([host]);
+    if (excludedNow()) {
+      // 显示回来：移除所有让本站被排除的条目（含 zhihu.com 这类上级域名条目）
+      next.excludedSites = S.removeSiteEntries(st.excludedSites, host);
       st = next;
       S.saveSettings(st);
+      renderSiteToggle();
+      $('hint').textContent = '已在本网站显示悬浮按钮（立即生效）';
+    } else {
+      next.excludedSites = (next.excludedSites || []).concat([host]);
+      st = next;
+      S.saveSettings(st);
+      renderSiteToggle();
+      $('hint').textContent = '已在本网站隐藏悬浮按钮（可再点「本网站显示」恢复）';
     }
-    $('hint').textContent = '已在本网站隐藏按钮（可在设置里恢复）';
-    document.querySelector('[data-act="hide"]').disabled = true;
   }
 
   S.loadSettings(function (s) {
@@ -123,15 +148,15 @@
         return;
       }
       if (st.rememberPerSite && typeof st.siteSpeeds[host] === 'number') siteRate = st.siteSpeeds[host];
-      if (S.isSiteExcluded(st.excludedSites, host)) {
-        $('hint').textContent = '本网站已隐藏按钮（可在设置里恢复）';
-        document.querySelector('[data-act="hide"]').disabled = true;
-      } else {
-        $('hint').textContent = '选择档位或拖动滑杆，本网站立即生效';
-      }
       applyAccent();
       render();
       init();
+      renderSiteToggle();          // 「本网站隐藏 / 本网站显示」两态按当前排除状态渲染
+      if (excludedNow()) {
+        $('hint').textContent = '本网站已隐藏悬浮按钮，点「本网站显示」可恢复';
+      } else {
+        $('hint').textContent = '选择档位或拖动滑杆，本网站立即生效';
+      }
     });
   });
 })();

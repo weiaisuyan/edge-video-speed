@@ -78,11 +78,18 @@ input[type=number]{width:110px}
 .mp-head span:first-child{font-size:12px; color:#a7adb7; letter-spacing:.4px}
 .mp-now{font-size:17px; font-weight:700; color:#cfe0f0; font-variant-numeric:tabular-nums}
 .mp-chips{display:grid; grid-template-columns:repeat(3,1fr); gap:6px}
+.mp-chips.sorting .mp-chip{transition:none}
 .mp-chip{position:relative; height:30px; border-radius:9px; border:1px solid rgba(255,255,255,.1);
-  background:rgba(255,255,255,.045); color:#e7eaee; font-size:12.5px; font-weight:600; cursor:pointer;
-  display:flex; align-items:center; justify-content:center; font-variant-numeric:tabular-nums}
+  background:rgba(255,255,255,.045); color:#e7eaee; font-size:12.5px; font-weight:600; cursor:grab;
+  display:flex; align-items:center; justify-content:center; font-variant-numeric:tabular-nums;
+  user-select:none; touch-action:none; transition:background .12s ease, opacity .12s ease, box-shadow .12s ease}
 .mp-chip:hover{background:rgba(255,255,255,.1)}
 .mp-chip.on{background:var(--mp-accent); border-color:var(--mp-accent); color:#fff}
+/* 拖动排序：被拖的那一格抬起来、其余半透明，指示落点 */
+.mp-chip.dragging{opacity:.92; cursor:grabbing; z-index:2;
+  box-shadow:0 6px 18px rgba(0,0,0,.5); border-color:rgba(255,255,255,.45);
+  background:rgba(255,255,255,.18)}
+.mp-chips.sorting .mp-chip:not(.dragging){opacity:.55}
 .mp-chip .del{position:absolute; right:3px; top:50%; transform:translateY(-50%); width:15px; height:15px;
   border-radius:50%; border:0; background:rgba(0,0,0,.34); color:#fff; font-size:10px; line-height:1;
   cursor:pointer; display:none; padding:0}

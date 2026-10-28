@@ -152,6 +152,18 @@ window.VSC_SHARED = (function () {
     return false;
   }
 
+  // 把「会让当前网站被排除」的条目全部移除（含上级域名条目）。
+  // 与 isSiteExcluded 同一判据，保证「隐藏」之后一定能「显示」回来。
+  function removeSiteEntries(list, hostname) {
+    var h = hostKey(hostname);
+    if (!h || !Array.isArray(list)) return Array.isArray(list) ? list.slice() : [];
+    return list.filter(function (v) {
+      var e = normalizeSite(v);
+      if (!e) return true;
+      return !(h === e || h.slice(-(e.length + 1)) === '.' + e);
+    });
+  }
+
   function loadSettings(cb) {
     try {
       chrome.storage.local.get('settings', function (o) {
@@ -188,6 +200,7 @@ window.VSC_SHARED = (function () {
     normalizeSite: normalizeSite,
     hostKey: hostKey,
     isSiteExcluded: isSiteExcluded,
+    removeSiteEntries: removeSiteEntries,
     loadSettings: loadSettings,
     saveSettings: saveSettings
   };

@@ -75,23 +75,32 @@ cdp = CDP(PORT)
 print("Edge:", cdp.send("Browser.getVersion")["product"])
 
 # 找到扩展 ID
-ext_id = ext_id_for(LOAD_PATH)
+# ⚠️ 不能只靠路径哈希猜（实测与 Edge 实际 ID 会不一致 → options 页「已阻止」）。
+# 硬判据 = target 列表里出现 chrome-extension://<id>/background.js 的 service_worker。
+def real_ext_id():
+    for t in cdp.targets():
+        u = t.get("url") or ""
+        if t.get("type") == "service_worker" and u.startswith("chrome-extension://") and u.endswith("/background.js"):
+            return u.split("/")[2]
+    return ""
+
+
+ext_id = ""
+for _ in range(20):
+    ext_id = real_ext_id()
+    if ext_id:
+        break
+    time.sleep(0.5)
+if not ext_id:
+    print("FAIL 扩展未加载（没有 background.js 的 service_worker target）")
+    sys.exit(1)
+print("ext_id(from SW)=%s  ext_id(path hash)=%s" % (ext_id, ext_id_for(LOAD_PATH)))
+
 tid_opt, sid_opt = cdp.open("chrome-extension://%s/options.html" % ext_id, wait=1.8)
 try:
     ver = cdp.ev(sid_opt, "chrome.runtime.getManifest().version")
-except Exception as e:
+except Exception:
     ver = None
-if not ver:
-    # 兜底：从 profile Preferences 里找加载的扩展 ID
-    pref = os.path.join(OUT, "vsc_auto_edge", "Default", "Preferences")
-    data = json.load(open(pref, "r", encoding="utf-8"))
-    for k, v in (data.get("extensions", {}).get("settings", {}) or {}).items():
-        if "edge-video-speed" in json.dumps(v).lower().replace("\\\\", "\\"):
-            ext_id = k
-            break
-    cdp.send("Target.closeTarget", {"targetId": tid_opt})
-    tid_opt, sid_opt = cdp.open("chrome-extension://%s/options.html" % ext_id, wait=1.8)
-    ver = cdp.ev(sid_opt, "chrome.runtime.getManifest().version")
 
 MANIFEST_VER = json.load(open(os.path.join(r"E:\程序\edge-video-speed", "manifest.json"), encoding="utf-8"))["version"]
 check("P1 扩展加载（设置页可访问 + 版本）", MANIFEST_VER, ver, "ext_id=%s" % ext_id)
@@ -105,8 +114,7 @@ time.sleep(1.8)
 s0 = store_get(sid_con)
 
 # ---------- P2 设置页渲染 ----------
-chips = cdp.ev(sid_opt, "document.querySelectorAll('#speedChips .chip').length")
-themes = cdp.ev(sid_opt, "document.querySelectorAll('#themes .tc').length")
+chips = cdp.ev(sid_opt, "document.querySelectorAll('#speedChips .mp-chip').length")
 pos = cdp.ev(sid_opt, "document.getElementById('posVal').textContent")
 sites_empty = cdp.ev(sid_opt, "document.querySelector('#siteList .empty') ? 1 : 0")
 check("P2 设置页渲染：9 个默认档位", 9, chips)
@@ -123,7 +131,7 @@ cdp.ev(sid_opt, "(()=>{const i=document.getElementById('newSpeed');i.value='1.35
                 "document.getElementById('addSpeed').click();})()")
 time.sleep(0.4)
 s1 = store_get(sid_con)
-check("P3 添加档位 1.35 → 档位数", 10, cdp.ev(sid_opt, "document.querySelectorAll('#speedChips .chip').length"))
+check("P3 添加档位 1.35 → 档位数", 10, cdp.ev(sid_opt, "document.querySelectorAll('#speedChips .mp-chip').length"))
 check("P3 添加档位 1.35 → storage 含 1.35", True, 1.35 in [round(x, 2) for x in s1.get("speeds", [])])
 
 cdp.ev(sid_opt, "document.getElementById('idleFade').click();")
@@ -149,7 +157,7 @@ cdp.ev(sid_opt, "document.getElementById('resetPos').click();")
 time.sleep(0.3)
 # 恢复样式 + 移除 1.35 档位（保持后续断言环境干净）
 cdp.ev(sid_opt, "document.querySelectorAll('#styles .stcell')[0].click();")
-cdp.ev(sid_opt, "(()=>{const cs=document.querySelectorAll('#speedChips .chip');for(const c of cs){"
+cdp.ev(sid_opt, "(()=>{const cs=document.querySelectorAll('#speedChips .mp-chip');for(const c of cs){"
                 "if(c.textContent.trim().indexOf('1.35')===0){c.querySelector('button').click();break;}}})()")
 time.sleep(0.35)
 s4 = store_get(sid_con)
@@ -415,7 +423,7 @@ time.sleep(0.4)
 
 # ---------- P23 设置页档位区 = 真实面板布局（三列网格 + 滑杆数值） ----------
 grid = cdp.ev(sid_opt, "(()=>{const g=document.getElementById('speedChips');const cs=getComputedStyle(g);"
-                       "return {display:cs.display, cols:cs.gridTemplateColumns.split(' ').length, chips:g.querySelectorAll('.chip').length}})()")
+                       "return {display:cs.display, cols:cs.gridTemplateColumns.split(' ').length, chips:g.querySelectorAll('.mp-chip').length}})()")
 check("P23 档位区=三列网格（页面菜单的真实布局）", ["grid", 3], [grid.get("display"), grid.get("cols")], "chips=%s" % grid.get("chips"))
 check("P23 设置页滑杆上限 = 10×", "10", cdp.ev(sid_opt, "document.getElementById('mpSlider').max"))
 cdp.ev(sid_opt, "(()=>{const s=document.getElementById('mpSlider');s.value='2';s.dispatchEvent(new Event('input',{bubbles:true}));return 1})()")

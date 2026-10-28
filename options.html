@@ -59,7 +59,7 @@
 
   <section class="card">
     <h2>速度档位</h2>
-    <p class="desc">下面这块<b>就是页面上菜单的真实样子</b>（深色面板、三列网格、−+ 与滑杆）：点档位右上角 × 删除；滑杆调的是「没有网站记录时使用的默认速度」，数值实时显示在滑杆下方。范围 0.1×–10×，最多 12 个。</p>
+    <p class="desc">下面这块<b>就是页面上菜单的真实样子</b>（深色面板、三列网格、−+ 与滑杆）：点档位右上角 × 删除；<b>按住档位拖动可以调整顺序</b>，顺序会同步到页面上的菜单和工具栏弹窗；点档位本身 = 设为默认速度；滑杆调的是「没有网站记录时使用的默认速度」，数值实时显示在滑杆下方。范围 0.1×–10×，最多 12 个。</p>
     <div class="mockpanel" id="mockPanel">
       <div class="mp-head"><span>播放速度</span><span class="mp-now" id="mpNow">1×</span></div>
       <div class="mp-chips" id="speedChips"></div>
@@ -74,7 +74,7 @@
         <span class="mp-act">本网站隐藏</span>
         <span class="mp-act">设置</span>
       </div>
-      <div class="mp-hint">按住 Ctrl 拖动按钮可移动位置（自动记住）<br>Ctrl+Shift+&gt; 加快 · Ctrl+Shift+&lt; 减慢<br>Ctrl+Shift+0 重置为 1×</div>
+      <div class="mp-hint">按住档位拖动可调整顺序（同步到页面菜单与工具栏弹窗）<br>按住 Ctrl 拖动按钮可移动位置（自动记住）<br>Ctrl+Shift+&gt; 加快 · Ctrl+Shift+&lt; 减慢 · Ctrl+Shift+0 重置为 1×</div>
     </div>
     <div class="addrow">
       <input type="number" id="newSpeed" min="0.1" max="10" step="0.05" placeholder="例如 1.35">

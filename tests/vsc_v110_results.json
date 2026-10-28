@@ -1,0 +1,281 @@
+[
+  {
+    "case": "T1 非升序顺序被原样保留（不再自动排序）",
+    "expected": [
+      "2",
+      "1.5",
+      "1",
+      "0.75",
+      "2.5",
+      "0.5"
+    ],
+    "actual": [
+      "2",
+      "1.5",
+      "1",
+      "0.75",
+      "2.5",
+      "0.5"
+    ],
+    "pass": true,
+    "note": ""
+  },
+  {
+    "case": "T2 拖动后顺序 = 首项移到末尾",
+    "expected": [
+      "1.5",
+      "1",
+      "0.75",
+      "2.5",
+      "0.5",
+      "2"
+    ],
+    "actual": [
+      "1.5",
+      "1",
+      "0.75",
+      "2.5",
+      "0.5",
+      "2"
+    ],
+    "pass": true,
+    "note": ""
+  },
+  {
+    "case": "T3 新顺序已落盘到 storage",
+    "expected": [
+      1.5,
+      1,
+      0.75,
+      2.5,
+      0.5,
+      2
+    ],
+    "actual": [
+      1.5,
+      1,
+      0.75,
+      2.5,
+      0.5,
+      2
+    ],
+    "pass": true,
+    "note": ""
+  },
+  {
+    "case": "T4 刷新后顺序仍保持",
+    "expected": [
+      "1.5",
+      "1",
+      "0.75",
+      "2.5",
+      "0.5",
+      "2"
+    ],
+    "actual": [
+      "1.5",
+      "1",
+      "0.75",
+      "2.5",
+      "0.5",
+      "2"
+    ],
+    "pass": true,
+    "note": ""
+  },
+  {
+    "case": "T5 单击档位 = 设为默认速度",
+    "expected": 0.75,
+    "actual": 0.75,
+    "pass": true,
+    "note": ""
+  },
+  {
+    "case": "T6 单击不改变顺序",
+    "expected": [
+      "1.5",
+      "1",
+      "0.75",
+      "2.5",
+      "0.5",
+      "2"
+    ],
+    "actual": [
+      "1.5",
+      "1",
+      "0.75",
+      "2.5",
+      "0.5",
+      "2"
+    ],
+    "pass": true,
+    "note": ""
+  },
+  {
+    "case": "T7 新档位追加到末尾",
+    "expected": [
+      "1.5",
+      "1",
+      "0.75",
+      "2.5",
+      "0.5",
+      "2",
+      "3.5"
+    ],
+    "actual": [
+      "1.5",
+      "1",
+      "0.75",
+      "2.5",
+      "0.5",
+      "2",
+      "3.5"
+    ],
+    "pass": true,
+    "note": ""
+  },
+  {
+    "case": "T8 测试页注入悬浮按钮",
+    "expected": 1,
+    "actual": 1,
+    "pass": true,
+    "note": ""
+  },
+  {
+    "case": "T9 页面菜单档位顺序 = 设置页顺序",
+    "expected": [
+      "1.5×",
+      "1×",
+      "0.75×",
+      "2.5×",
+      "0.5×",
+      "2×",
+      "3.5×"
+    ],
+    "actual": [
+      "1.5×",
+      "1×",
+      "0.75×",
+      "2.5×",
+      "0.5×",
+      "2×",
+      "3.5×"
+    ],
+    "pass": true,
+    "note": ""
+  },
+  {
+    "case": "T10 弹窗识别到当前网站（打桩成功）",
+    "expected": "本网站隐藏",
+    "actual": "本网站隐藏",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "case": "T11 点「本网站隐藏」→ 加入排除清单",
+    "expected": [
+      "127.0.0.1"
+    ],
+    "actual": [
+      "127.0.0.1"
+    ],
+    "pass": true,
+    "note": ""
+  },
+  {
+    "case": "T12 按钮变成「本网站显示」（不再 disabled）",
+    "expected": "本网站显示",
+    "actual": "本网站显示",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "case": "T13 按钮可点（disabled=false）",
+    "expected": false,
+    "actual": false,
+    "pass": true,
+    "note": ""
+  },
+  {
+    "case": "T14 页面悬浮按钮立即隐藏",
+    "expected": "none",
+    "actual": "none",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "case": "T15 再点「本网站显示」→ 排除清单移除本站",
+    "expected": [],
+    "actual": [],
+    "pass": true,
+    "note": ""
+  },
+  {
+    "case": "T16 按钮回到「本网站隐藏」",
+    "expected": "本网站隐藏",
+    "actual": "本网站隐藏",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "case": "T17 页面悬浮按钮立即恢复",
+    "expected": "block",
+    "actual": "block",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "case": "T18 排除清单命中本站时按钮显示「本网站显示」",
+    "expected": "本网站显示",
+    "actual": "本网站显示",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "case": "T19 点「显示」只移除命中本站的条目，保留其它站点",
+    "expected": [
+      "example.com"
+    ],
+    "actual": [
+      "example.com"
+    ],
+    "pass": true,
+    "note": ""
+  },
+  {
+    "case": "T20 上级域名条目命中子域",
+    "expected": true,
+    "actual": true,
+    "pass": true,
+    "note": ""
+  },
+  {
+    "case": "T21 removeSiteEntries 移除上级条目、保留其它",
+    "expected": [
+      "example.com"
+    ],
+    "actual": [
+      "example.com"
+    ],
+    "pass": true,
+    "note": ""
+  },
+  {
+    "case": "T22 未命中时不动其它条目",
+    "expected": [
+      "example.com"
+    ],
+    "actual": [
+      "example.com"
+    ],
+    "pass": true,
+    "note": ""
+  },
+  {
+    "case": "T23 不同站点不误命中",
+    "expected": false,
+    "actual": false,
+    "pass": true,
+    "note": ""
+  }
+]

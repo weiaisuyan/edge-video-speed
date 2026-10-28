@@ -29,10 +29,10 @@
     out.displayMode = raw.displayMode === 'always' ? 'always' : 'videoOnly';
     if (Array.isArray(raw.speeds)) {
       var seen = {};
+      // v1.1.0：不再按数值排序——数组顺序 = 页面上菜单里的显示顺序，由用户拖动决定
       out.speeds = raw.speeds
         .map(function (v) { return S.cleanRate(v); })
         .filter(function (v) { var k = String(v); if (seen[k]) return false; seen[k] = 1; return true; })
-        .sort(function (a, b) { return a - b; })
         .slice(0, 12);
     }
     if (!out.speeds.length) out.speeds = S.DEFAULTS.speeds.slice();
@@ -113,30 +113,101 @@
   }
 
   // 档位编辑区 = 页面上菜单的真实样子（深色面板 / 三列网格 / −+ 与滑杆 / 数值在滑杆下方）
+  // 数组顺序 = 页面上菜单里的显示顺序：按住档位拖动即可调整（v1.1.0）
   function renderSpeeds() {
     var box = $('speedChips');
     box.innerHTML = '';
-    st.speeds.forEach(function (r) {
+    st.speeds.forEach(function (r, i) {
       var on = Math.abs(r - st.defaultSpeed) < 0.001;
       var d = document.createElement('div');
       d.className = 'chip mp-chip' + (on ? ' on' : '');
+      d.setAttribute('data-rate', String(r));
+      d.setAttribute('data-idx', String(i));
+      d.title = '点一下设为默认速度 · 按住拖动可调整顺序';
       d.innerHTML = '<span>' + S.fmt(r) + '</span><button type="button" class="del" title="删除该档位">×</button>';
-      d.addEventListener('click', function (e) {
-        if (e.target && e.target.classList.contains('del')) {
-          if (st.speeds.length <= 1) return;
-          st.speeds = st.speeds.filter(function (x) { return Math.abs(x - r) > 0.001; });
-          if (Math.abs(st.defaultSpeed - r) < 0.001) st.defaultSpeed = st.speeds[0];
-          save(true);
-          renderSpeeds();
-          return;
-        }
-        st.defaultSpeed = r;      // 点档位本身 = 设为默认速度
+      // 删除按钮独立处理（否则会被当成拖动/单击）
+      d.querySelector('.del').addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (st.speeds.length <= 1) return;
+        st.speeds = st.speeds.filter(function (x) { return Math.abs(x - r) > 0.001; });
+        if (Math.abs(st.defaultSpeed - r) < 0.001) st.defaultSpeed = st.speeds[0];
         save(true);
         renderSpeeds();
       });
       box.appendChild(d);
     });
     renderMockState();
+  }
+
+  /* ---------- 档位拖动排序 ----------
+     单击 = 设为默认速度；按住移动 >6px = 排序（松手存盘）。
+     DOM 顺序就是 st.speeds 顺序，拖完从 DOM 读回来存盘。 */
+  var chipDrag = null;
+
+  function chipOrderFromDom() {
+    var out = [];
+    $('speedChips').querySelectorAll('.mp-chip').forEach(function (c) {
+      var v = Number(c.getAttribute('data-rate'));
+      if (isFinite(v) && out.indexOf(v) === -1) out.push(v);
+    });
+    return out;
+  }
+
+  function onChipDown(e) {
+    if (e.button !== 0) return;
+    var chip = e.target.closest ? e.target.closest('.mp-chip') : null;
+    if (!chip) return;
+    if (e.target.closest('.del')) return;      // 删除按钮走自己的 click
+    chipDrag = { el: chip, x: e.clientX, y: e.clientY, moved: false };
+    try { chip.setPointerCapture(e.pointerId); } catch (err) { /* 忽略 */ }
+    e.preventDefault();                        // 防止拖动时选中文字
+  }
+
+  function moveChipToPointer(el, x, y) {
+    var box = $('speedChips');
+    var chips = Array.prototype.slice.call(box.querySelectorAll('.mp-chip'));
+    var target = null;
+    for (var i = 0; i < chips.length; i++) {
+      var r = chips[i].getBoundingClientRect();
+      if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) { target = chips[i]; break; }
+    }
+    if (!target || target === el) return;
+    var tr = target.getBoundingClientRect();
+    if (x < tr.left + tr.width / 2) {
+      if (el.nextSibling !== target) box.insertBefore(el, target);
+    } else if (target.nextSibling !== el) {
+      box.insertBefore(el, target.nextSibling);
+    }
+  }
+
+  function onChipMove(e) {
+    if (!chipDrag || !chipDrag.el) return;
+    var d = chipDrag;
+    if (!d.moved && Math.abs(e.clientX - d.x) + Math.abs(e.clientY - d.y) < 6) return;
+    if (!d.moved) {
+      d.moved = true;
+      d.el.classList.add('dragging');
+      $('speedChips').classList.add('sorting');
+    }
+    moveChipToPointer(d.el, e.clientX, e.clientY);
+  }
+
+  function endChipDrag(e) {
+    if (!chipDrag) return;
+    var d = chipDrag;
+    chipDrag = null;
+    try { if (e && e.pointerId !== undefined) d.el.releasePointerCapture(e.pointerId); } catch (err) { /* 忽略 */ }
+    d.el.classList.remove('dragging');
+    $('speedChips').classList.remove('sorting');
+    if (d.moved) {
+      st.speeds = chipOrderFromDom();
+      save(true);
+      renderSpeeds();
+      return;
+    }
+    // 没移动 = 单击：设为默认速度
+    var r = Number(d.el.getAttribute('data-rate'));
+    if (isFinite(r)) { st.defaultSpeed = r; save(true); renderSpeeds(); }
   }
 
   function renderMockState() {
@@ -413,6 +484,12 @@
     $('mpMinus').addEventListener('click', function () { bumpDefault(-1); });
     $('mpPlus').addEventListener('click', function () { bumpDefault(1); });
 
+    // 档位拖动排序（pointer 事件挂在容器上，指针移出也能继续拖）
+    $('speedChips').addEventListener('pointerdown', onChipDown);
+    window.addEventListener('pointermove', onChipMove, true);
+    window.addEventListener('pointerup', endChipDrag, true);
+    window.addEventListener('pointercancel', endChipDrag, true);
+
     $('addSpeed').addEventListener('click', function () {
       var v = Number($('newSpeed').value);
       if (!isFinite(v) || v < S.DEFAULTS.minRate || v > S.DEFAULTS.maxRate) {
@@ -423,7 +500,8 @@
       var r = S.cleanRate(v);
       if (st.speeds.some(function (x) { return Math.abs(x - r) < 0.001; })) { $('newSpeed').value = ''; return; }
       if (st.speeds.length >= 12) { $('newSpeed').value = ''; $('newSpeed').placeholder = '最多 12 个档位'; return; }
-      st.speeds = st.speeds.concat([r]).sort(function (a, b) { return a - b; });
+      // 新档位追加到末尾（顺序由用户拖动决定，不再自动按数值排序）
+      st.speeds = st.speeds.concat([r]);
       $('newSpeed').value = '';
       save(true); renderSpeeds();
     });

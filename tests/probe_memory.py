@@ -24,7 +24,18 @@ from cdp import CDP, ext_id_for  # noqa: E402
 
 PORT = 9222
 PAGE = "http://127.0.0.1:8731/vsc_test_memory.html"
-EXT = ext_id_for("E:\\程序\\edge-video-speed")
+
+
+def real_ext_id(c):
+    """真实扩展 ID 不能靠路径哈希猜（实测与 Edge 实际 ID 不一致 → options 页「已阻止」、
+    chrome.storage undefined）。硬判据 = target 列表里有 chrome-extension://<id>/background.js 的 SW。"""
+    for t in c.targets():
+        u = t.get("url") or ""
+        if t.get("type") == "service_worker" and u.startswith("chrome-extension://") and u.endswith("/background.js"):
+            return u.split("/")[2]
+    return ""
+
+
 G = 0.85   # 宽限期外等待（SITE_LOAD_GRACE=2000ms）
 
 results = []
@@ -39,10 +50,19 @@ def check(name, expect, actual):
 
 def main():
     c = CDP(PORT)
-    print("扩展 ID:", EXT)
+    ext = ""
+    for _ in range(20):
+        ext = real_ext_id(c)
+        if ext:
+            break
+        time.sleep(0.5)
+    if not ext:
+        print("FAIL 扩展未加载（没有 background.js 的 service_worker target）")
+        return 1
+    print("扩展 ID:", ext)
 
     # ---------- 准备：写入「该站记忆=1.75」 ----------
-    tid_o, sid_o = c.open("chrome-extension://%s/options.html" % EXT, wait=1.6)
+    tid_o, sid_o = c.open("chrome-extension://%s/options.html" % ext, wait=1.6)
 
     def store_get():
         return c.ev(sid_o, "new Promise(r=>chrome.storage.local.get('settings',o=>r(o.settings||{})))")
