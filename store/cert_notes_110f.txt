@@ -1,0 +1,28 @@
+No account or credentials are required.
+
+[SETUP]
+No login needed. No network requests, no data upload; all settings stay local.
+Button appears on any page with an HTML5 <video>, e.g. https://www.w3schools.com/html/html5_video.asp
+Default mode is "only on pages with video": a pill button shows near the upper right; click it for the speed menu.
+
+[VERIFY IN 1.1.0]
+1) Reorder presets by dragging.
+Open Options (right-click the icon -> Options, or "Settings" in the on-page menu). In the "Speed presets" card (a dark panel replicating the on-page menu), press and hold a preset, drag it over another: order changes live, saved on release. A click without moving still sets it as the default speed. Reload Options to confirm it persists; the on-page menu and toolbar popup use the same order.
+2) Show a site again after hiding it.
+On a page with a video, click the toolbar icon and "Hide on this site". The floating button disappears at once and the popup button becomes "Show on this site". Click it again: the site leaves the exclusion list and the button returns at once, so hiding is always reversible from the same popup.
+
+[OTHER]
+1. Speed: click button -> 1.5x -> video plays at 1.5x, label updates.
+2. Memory: after 1.5x press F5; speed restored to 1.5x, not 1x.
+3. Follow the site player: change speed with the video's own control; the extension follows, no fight back.
+4. Hotkeys: Ctrl+Shift+. faster / Ctrl+Shift+, slower / Ctrl+Shift+0 reset.
+5. Options: position, size, radius, 16 styles, opacity, presets, memory, exclusion list, export/import.
+6. "Settings" in the on-page menu opens Options.
+
+[PERMISSIONS]
+storage: saves preferences and per-site speed memory locally, never uploaded.
+activeTab: reads the current tab URL when the popup opens, for that site's memory and hide/show state.
+
+[LANGUAGES] Chinese (Simplified) and English, auto-switched.
+
+[KNOWN LIMITS] No content script on edge:// pages, the PDF viewer or the add-ons store. Apps not rendered by Edge cannot be controlled.
